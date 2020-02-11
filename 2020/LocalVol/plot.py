@@ -106,9 +106,9 @@ local_vol_surface = LocalVolSurface(
 def plot_surf(surf):
     years = np.arange(0, 2, 0.1)
     strikes = np.arange(535, 750, 1)
+    #plt.rcParams.update({'font.size': 17})
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    #ax.set_title(f"Local Vol Surface ({interp} Interpolation)")
     ax.set_title("Local Vol Surface")
     ax.set_xlabel("Strike")
     ax.set_ylabel("Maturity (years)")

@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import textwrap
@@ -30,12 +31,9 @@ cdef extern from "{os.path.abspath(ifile)}":
 
 if __name__ == "__main__":
 
-    """ usage: python c_to_pxd.py foo.h foo.pxd
+    argparser = argparse.ArgumentParser('Generate pxd from c header files')
+    argparser.add_argument('infile', help='name of file to parse')
+    argparser.add_argument('outfile', help='name of output file')
+    args = argparser.parse_args()
 
-        will generate foo.pxd
-        TODO: replace with argparse
-    """
-    if len(sys.argv) > 1:
-        print_to_file(sys.argv[1], sys.argv[2])
-    else:
-        print("Please provide a filename as argument")
+    print_to_file(args.infile, args.outfile)

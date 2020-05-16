@@ -9,13 +9,13 @@ import textwrap
 
 sys.path.extend(['.', '..'])
 
-from pycparser import parse_file, c_parser, cython_gen
+from pycparser import parse_file, c_parser, pxd_gen
 
 def translate_to_cython(filename):
     """ Use the Cython Generator module to emit a parsed AST.
     """
     ast = parse_file(filename, use_cpp=True)
-    generator = cython_gen.CythonGen()
+    generator = pxd_gen.CythonGen()
     return generator.visit(ast)
 
 

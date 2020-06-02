@@ -1,3 +1,4 @@
+# cython: language_level=3
 
 cdef extern from "/home/givenskm/Projects/pycparser/examples/c_files/trie.h":
 
@@ -14,4 +15,3 @@ cdef extern from "/home/givenskm/Projects/pycparser/examples/c_files/trie.h":
     int trie_remove(Trie *trie, char *key)
     int trie_remove_binary(Trie *trie, unsigned char *key, int key_length)
     unsigned int trie_num_entries(Trie *trie)
-

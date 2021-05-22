@@ -1,12 +1,17 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <chrono>
 #include <Eigen/Dense>
+
+using namespace std::chrono;
  
 using namespace Eigen;
  
 int main()
 {
+
+  auto start = high_resolution_clock::now();
   // C , Cn are the two price buffers used to propogate the Call value backwards in time
   // delta, gamma and theta are intermediate differential terms
   ArrayXd S(21), C(21), Cn(21), delta(19), gamma(19), theta(19);
@@ -52,6 +57,13 @@ int main()
     
   }
   
+  // After function call
+  auto stop = high_resolution_clock::now();
+
+  auto duration = duration_cast<microseconds>(stop - start);
+  
+  std::cout << "ran in: " << duration.count() << " microsecs "<< std::endl;
+
   std::cout << "C: " << C << std::endl;
 
 }

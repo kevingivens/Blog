@@ -12,9 +12,9 @@ class AddAnotherFunctor
 {
     double to_add;
 
-public:
-    AddAnotherFunctor(double to_add);
-    double operator()(double a, int b) const;
+    public:
+        AddAnotherFunctor(double to_add);
+        double operator()(double a, int b) const;
 };
 
 
@@ -31,5 +31,9 @@ public:
 
     double call_function(double a, int b) const;
 };
+
+
+
+
 
 #endif

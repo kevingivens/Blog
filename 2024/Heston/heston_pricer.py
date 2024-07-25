@@ -1,5 +1,5 @@
-from enum import Enum
-from scipy import integrate
+from enum import Enum, IntEnum
+from scipy.integrate import quad
 import numpy as np
 
 
@@ -53,6 +53,11 @@ import numpy as np
 
 
 """
+
+class OptionType(IntEnum):
+    PUT = -1
+    CALL = 1
+
 
 class AnalyticHestonEngine:
     def __init__(self, model) -> None:
@@ -183,7 +188,229 @@ class AP_Helper:
             vAvg_ = (1-np.exp(-kappa*term))*(v0 - theta) /(kappa*term) + theta
           case ComplexLogFormula.AngledContourNoCV:
             r = rho - sigma*self.freq / (v0 + kappa*theta*term)
-            tanPhi_ = np.atan((r*self.freq < 0.0)? np.pi/12*boost::math::sign(self.freq) : 0.0)
+            tanPhi_ = np.atan(np.where(r*self.freq < 0.0, np.pi/12*np.sign(self.freq),  0.0))
             # break 
           case _:
             raise ValueError("unknown control variate")
+           
+    def __call__(self, *args: np.Any, **kwds: np.Any) -> np.Any:
+       pass
+
+
+class Fj_Helper:
+    def __init__(
+        self,
+        kappa, 
+        theta,
+        sigma, 
+        v0, 
+        s0, 
+        rho,
+        cpx_log: ComplexLogFormula,
+        term, 
+        strike, 
+        ratio, 
+        j: int,
+        engine = None,
+    ):
+        self.j = j
+        self.kappa = kappa
+        self.theta = theta
+        self.sigma = sigma
+        self.v0 = v0
+        self.cpx_log = cpx_log
+        self.term = term
+        self.x = np.log(s0)
+        self.sx = np.log(strike)
+        self.dd = self.x-np.log(ratio)
+        # self.sigma2 = self.sigma_*self.sigma_
+        self.rsigma = rho*self.sigma
+        self.t0 = kappa if j==1 else kappa - rho*sigma
+        self.engine = engine
+        # log branch counter
+        self.b = 0        # log branch counter
+        self.g_km1 = 0  # imag part of last log value
+
+    def __call__(self, phi: float):
+        rpsig = rsigma_*phi
+        t1 = self.t0 + np.array([0 -rpsig*1j])
+        d = np.sqrt(t1*t1 - self.sigma**2*phi*std::complex<Real>(-phi, (j_== 1)? 1 : -1))
+        ex = np.exp(-d*self.term)
+        add_on_term = self.engine.addOnTerm(phi, self.term, self.j) if self.engine else 0.
+
+        if self.cpx_log == ComplexLogFormula.Gatheral:
+            if phi != 0.0:
+                if self.sigma > 1e-5:
+                    p = (t1-d)/(t1+d)
+                    g = np.log((1.0 - p*ex)/(1.0 - p))
+
+                    return np.exp(self.v0*(t1-d)*(1.0-ex)/(self.sigma**2*(1.0-ex*p))
+                                 + (self.kappa*self.theta)/self.sigma**2*((t1-d)*self.term-2.0*g)
+                                 + np.array([0.0 + phi*(self.dd-self.sx)*1j])
+                                 + add_on_term
+                                 ).imag()/phi
+                else:
+                    td = phi/(2.0*t1) * std::complex<Real>(-phi, (j_== 1)? 1 : -1)
+                    p = td*self.sigma**2/(t1+d)
+                    g = p*(1.0-ex)
+
+                    return np.exp(self.v0*td*(1.0-ex)/(1.0-p*ex)
+                                 + (self.kappa*self.theta)*(td*self.term-2.0*g/self.sigma**2)
+                                 + np.array([0.0, phi*(self.dd-self.sx)*1j])
+                                 + add_on_term
+                                 ).imag()/phi
+        
+            else:
+                # use l'Hospital's rule to get lim_{phi->0}
+                if self.j == 1:
+                    kmr = self.rsigma - self.kappa
+                    if np.abs(kmr) > 1e-7:
+                        return dd_-sx_
+                            + (np.exp(kmr*term_)*kappa_*theta_
+                               -kappa_*theta_*(kmr*term_+1.0) ) / (2*kmr*kmr)
+                            - v0_*(1.0-np.exp(kmr*term_)) / (2.0*kmr)
+                    
+                    else:
+                        # \kappa = \rho * \sigma
+                        return dd_-sx_ + 0.25*kappa_*theta_*term_*term_
+                                       + 0.5*v0_*term_;
+                
+                else:
+                    return dd_-sx_
+                        - (np.exp(-kappa_*term_)*kappa_*theta_
+                           +kappa_*theta_*(kappa_*term_-1.0))/(2*kappa_*kappa_)
+                        - v0_*(1.0-np.exp(-kappa_*term_))/(2*kappa_)
+                
+            
+        elif self.cpx_log == ComplexLogFormula.BranchCorrection:
+            p = (t1+d)/(t1-d)
+
+            # next term: g = std::log((1.0 - p*std::exp(d*term_))/(1.0 - p))
+
+            # the exp of the following expression is needed.
+            e = np.log(p)+d*self.term
+
+            # does it fit to the machine precision?
+            if np.exp(-e.real()) > QL_EPSILON:
+                g = np.log((1.0 - p/ex)/(1.0 - p))
+            else:
+                # use a "big phi" approximation
+                g = d*self.term + np.log(p/(p - 1.0))
+
+                if (g.imag() > np.pi) or (g.imag() <= -np.pi):
+                    # get back to principal branch of the complex logarithm
+                    Real im = std::fmod(g.imag(), 2*np.pi)
+                    if im > np.pi:
+                        im -= 2*np.pi
+                    elif im <= -np.pi:
+                        im += 2*np.pi
+
+                    g = std::complex<Real>(g.real(), im)
+                
+
+            # be careful here as we have to use a log branch correction
+            # to deal with the discontinuities of the complex logarithm.
+            # the principal branch is not always the correct one.
+            # (s. A. Sepp, chapter 4)
+            # remark: there is still the change that we miss a branch
+            # if the order of the integration is not high enough.
+            const Real tmp = g.imag() - self.g_km1
+            if tmp <= -np.pi:
+                self.b += self.b
+            elif tmp > np.pi:
+                self.b -= self.b
+
+            self.g_km1 = g.imag()
+            g += std::complex<Real>(0, 2*b_*np.pi)
+
+            return np.exp(v0_*(t1+d)*(ex-1.0)/(sigma2_*(ex-p))
+                            + (kappa_*theta_)/sigma2_*((t1+d)*term_-2.0*g)
+                            + std::complex<Real>(0,phi*(dd_-sx_))
+                            + add_on_term
+                            ).imag/phi
+        else:
+            raise ValueError("unknown complex logarithm formula")
+
+
+
+
+
+
+
+def pv(
+      risk_free_discount, 
+      dividend_discount, 
+        spot_price,
+        strike_price,
+        term,
+        kappa, 
+        theta,
+        sigma,
+        v0, 
+        rho,
+        payoff_type : TypePayoff,
+        integration: Integration,
+        cpx_log: ComplexLogFormula,
+        engine: AnalyticHestonEngine,
+        option_type,
+):
+    """ price a Euro Option using the Heston Model """
+    
+    ratio = risk_free_discount / dividend_discount
+
+    evaluations = 0
+
+    match cpx_log:
+        case ComplexLogFormula.Gatheral | ComplexLogFormula.BranchCorrection:
+            c_inf = np.min(0.2, np.max(0.0001, np.sqrt(1.0-rho*rho)/sigma))*(v0 + kappa*theta*term)
+            fj_helper = Fj_Helper(kappa, theta, sigma, v0, spot_price, rho, engine, cpx_log, term, strike_price, ratio, 1)
+            p1 = quad(Fj_Helper, )
+            
+            # p1 = integration.calculate(c_inf, Fj_Helper(kappa, theta, sigma, v0, spot_price, rho, engine, cpx_log, term, strike_price, ratio, 1))/np.pi
+            
+            evaluations += integration.numberOfEvaluations()
+
+            p2 = integration.calculate(c_inf, Fj_Helper(kappa, theta, sigma, v0, spot_price, rho, engine, cpx_log, term, strike_price, ratio, 2))/np.pi
+            
+            evaluations += integration.numberOfEvaluations()
+
+            value = spot_price*dividend_discount*(p1 + int(option_type)*0.5) - strike_price*risk_free_discount*(p2 + int(option_type)*0.5)
+            
+        case ComplexLogFormula.AndersenPiterbarg | ComplexLogFormula.AndersenPiterbargOptCV | ComplexLogFormula.AsymptoticChF| ComplexLogFormula.OptimalCV:
+            c_inf = np.sqrt(1.0-rho*rho)*(v0 + kappa*theta*term)/sigma
+
+            fwd_price = spot_price / ratio
+
+            epsilon = engine.andersenPiterbargEpsilon_*np.pi/(np.sqrt(strike_price*fwd_price)*risk_free_discount)
+
+            def uM():
+                return andersenPiterbargIntegrationLimit(c_inf, epsilon, v0, term)
+
+
+            cv_helper = AP_Helper(
+               term, 
+               fwd_price, 
+               strike_price,
+               optimalControlVariate(term, v0, kappa, theta, sigma, rho) if cpx_log == ComplexLogFormula.OptimalCV else cpx_log,
+               engine
+            )
+
+            cv_value = cv_helper.controlVariateValue()
+
+            h_cv = integration.calculate(c_inf, cv_helper, uM) * np.sqrt(strike_price * fwd_price)/np.pi
+            
+            evaluations += integration.numberOfEvaluations()
+
+            match option_type:
+               case OptionType.Call:
+                  value = (cvValue + h_cv)*risk_free_discount
+                  # break
+               case OptionType.Put:
+                  value = (cvValue + h_cv - (fwd_price - strike_price))*risk_free_discount
+                  # break
+               case _:
+                  raise ValueError("unknown option type")
+                  break
+
+        case  _:
+            raise ValueError("unknown complex log formula")

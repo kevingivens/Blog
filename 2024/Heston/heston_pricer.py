@@ -193,8 +193,34 @@ class AP_Helper:
           case _:
             raise ValueError("unknown control variate")
            
-    def __call__(self, *args: np.Any, **kwds: np.Any) -> np.Any:
-       pass
+    def __call__(self, u) -> np.Any:
+        # assert self.engine.addOnTerm(u, term_, 1) == std::complex<Real>(0.0) and
+        #       self.engine.addOnTerm(u, term_, 2) == std::complex<Real>(0.0),
+        #            "only Heston model is supported"
+
+        std::complex<double> i(0, 1)
+
+        if (self.cpx_log == ComplexLogFormula.AngledContour) or (self.cpx_log == ComplexLogFormula.AngledContourNoCV) or (self.cpx_log == AsymptoticChF):
+            std::complex<Real> h_u(u, u*tanPhi_ - alpha_)
+            std::complex<Real> hPrime(h_u-i)
+
+            std::complex<Real> phiBS(0.0)
+            if self.cpx_log == ComplexLogFormula.AngledContour:
+                phiBS = np.exp(-0.5*vAvg_*term_*(hPrime*hPrime + std::complex<Real>(-hPrime.imag(), hPrime.real())))
+            elif sel.cpx_log == ComplexLogFormula.AsymptoticChF:
+                phiBS = np.exp(u*std::complex<Real>(1, tanPhi_)*phi_ + psi_)
+            return np.exp(-u*tanPhi_*freq_)*(np.exp(np.array([0.0 + u*freq_*1j])))*std::complex<Real>(1, tanPhi_)
+                      *(phiBS - self.engine.chF(hPrime, term_))/(h_u*hPrime)
+                      ).real()*s_alpha_
+        elif (self.cpx_log == ComplexLogFormula.AndersenPiterbarg) or (self.cpx_log == ComplexLogFormula.AndersenPiterbargOptCV):
+            std::complex<Real> z(u, -alpha_)
+            std::complex<Real> zPrime(u, -alpha_-1)
+            std::complex<Real> phiBS = np.exp(-0.5*vAvg_*term_*(zPrime*zPrime +
+                        std::complex<Real>(-zPrime.imag(), zPrime.real()))
+            )
+            return (np.exp(std::complex<Real> (0.0, u*freq_)) * (phiBS - self.engine.chF(zPrime, term_)) / (z*zPrime)).real()*s_alpha_
+        else:
+            raise ValueError("unknown control variate")
 
 
 class Fj_Helper:

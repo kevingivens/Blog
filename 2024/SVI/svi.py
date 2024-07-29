@@ -23,13 +23,12 @@ def calibrate():
     """
     x0 = np.array([0.5, 0])
     res = minimize(
-        cost_function, 
+        rosen, 
         x0, 
-        method='trust-constr', 
-        jac=rosen_der, 
-        hess=rosen_hess,
-        constraints=[linear_constraint, nonlinear_constraint],
-        options={'verbose': 1}, 
+        method='SLSQP', 
+        jac=rosen_der,
+        constraints=[eq_cons, ineq_cons], 
+        options={'ftol': 1e-9, 'disp': True},
         bounds=bounds
     )
     return res

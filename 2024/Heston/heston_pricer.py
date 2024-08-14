@@ -340,14 +340,14 @@ class Fj_Helper:
             # (s. A. Sepp, chapter 4)
             # remark: there is still the change that we miss a branch
             # if the order of the integration is not high enough.
-            const Real tmp = g.imag() - self.g_km1
+            tmp = g.imag() - self.g_km1
             if tmp <= -np.pi:
                 self.b += self.b
             elif tmp > np.pi:
                 self.b -= self.b
 
             self.g_km1 = g.imag()
-            g += std::complex<Real>(0, 2*b_*np.pi)
+            g += 2*b_*np.pi*j
 
             return np.exp(v0_*(t1+d)*(ex-1.0)/(sigma2_*(ex-p))
                             + (kappa_*theta_)/sigma2_*((t1+d)*term_-2.0*g)

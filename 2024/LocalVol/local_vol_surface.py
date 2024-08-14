@@ -1,44 +1,57 @@
 import numpy as np
+from numpy.typing import ArrayLike, NDArray
 from scipy.interpolate import LinearNDInterpolator
 
+
 class DiscountCurve:
-    def __init__(self, dfs, times, kind='linear'):
+    def __init__(self, dfs: ArrayLike, times: ArrayLike, kind='linear'):
         self.dfs = dfs
         self.times = times
-        self.interp = np.interp(self.times, self.dfs)
+        self._interp1d = np.interp(self.times, self.dfs)
 
     def __call__(self, x):
-        self.interp(x)
+        self._interp1d(x)
     
         
 class BlackVarianceSurface:
-    def __init__(self, strikes, times, vols):
+    def __init__(self, strikes: ArrayLike, times: ArrayLike, vols: ArrayLike):
+        """ strikes 1d array
+            times 1d array
+            vols: 2d array 
+        """
         self.strikes = strikes
         self.times = times
         self.vols = vols
+        self._interp2d = LinearNDInterpolator(points, values, fill_value=np.nan, rescale=False)
 
-    def __call__(self, t, y) -> np.Any:
-        pass
+    def __call__(self, pnts) -> NDArray:
+        """
+        pnts: 2d array
+        """
+        self._interp2d(pnts)
 
 
 class LocalVolatility:
     def __init__(
             self,
-            forwards,
-            variance_surface: BlackVarianceSurface, 
+            black_var_surface: BlackVarianceSurface, 
             risk_free_curve: DiscountCurve, 
             dividend_curve: DiscountCurve
     ) -> None:
-        self.black_var_surface = variance_surface
+        self.black_var_surface = black_var_surface
         self.risk_free_disc_curve = risk_free_curve
         self.dividend_disc_curve = dividend_curve
-        self.forwards = forwards
+        # self.forwards = forwards
         # self.dt = np.min(0.0001, self.times/2.0)
         # self.y = np.log(k/forwards)
 
-    def __call__(self, t, y):
+    def __call__(self, pnts) -> NDArray:
+        # QL signature is (t, y)
+        """
+        pnts: 2d array
+        """
         y = np.log(k/f)
-        dy = y*0.0001 if (np.abs(y) > 0.001) else 0.000001
+        dy = np.where(np.abs(y) > 0.001, y*0.0001, 0.000001)
         strikep = k * np.exp(dy)
         strikem = k / np.exp(dy)
         w  = self.black_var_surface(t, k)
